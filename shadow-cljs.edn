@@ -1,0 +1,22 @@
+{:deps   {:aliases [:dev :test]}
+ :builds {:web  {:target           :browser
+                 :output-dir       "public"
+                 :asset-path       "."
+                 :modules          {:shared {:entries []}
+                                    :app    {:entries    [ilta.app]
+                                             :depends-on #{:shared}}
+                                    :worker {:init-fn    ilta.worker/init
+                                             :depends-on #{:shared}
+                                             :web-worker true}}
+                 :dev              {:closure-defines {ilta.app/DEV true}}
+                 :release          {:closure-defines {ilta.app/DEV false}}
+                 :devtools         {:before-load ilta.app/stop
+                                    :after-load  ilta.app/start
+                                    :watch-dir   "public"
+                                    :http-root   "public"
+                                    :http-port   8900}
+                 :compiler-options {:output-feature-set :es8}}
+          :test {:target     :node-test
+                 :output-to  "target/test/index.js"
+                 :output-dir "target/test/js"
+                 :autorun    true}}}
