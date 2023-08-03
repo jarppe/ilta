@@ -1,0 +1,5 @@
+importScripts("shared.js");
+(function(){
+'use strict';var nk=function(a,b){return $APP.Vf.h(mk,function(c){return c.put(a,b)})},ok=function(a){return a.respondWith(function(){var b=a.request,c=b.url;return $APP.uf($APP.Vf.h(fetch(b),function(d){console.log("worker: on-fetch: loaded from server",c);return $APP.Vf.h(nk(b,d.clone()),function(){return d})}),function(){return $APP.uf($APP.Vf.h(caches.match(b),function(d){console.log("worker: on-fetch: loaded from cache",c);return d}),function(d){console.log("worker: on-fetch: failed",c,d);throw d;
+})})}())},pk=function(a){var b=self.registration.navigationPreload;return $APP.r(b)?a.waitUntil(b.enable()):null},rk=function(a){return a.waitUntil($APP.Vf.h(mk,function(b){return b.addAll(qk)}))},sk=function(){console.info("worker: initializing...");self.addEventListener("activate",pk);self.addEventListener("install",rk);self.addEventListener("fetch",ok);console.info("worker: done")};var qk=["./index.html","./styles.css","./shared.js","./app.js"],mk=caches.open("v1");sk();sk();
+}).call(this);
