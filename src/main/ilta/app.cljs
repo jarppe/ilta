@@ -1,30 +1,18 @@
 (ns ilta.app
   (:require ["react-dom/client" :refer [createRoot]]
-            [helix.core :as hx :refer [$ defnc]]
-            [helix.dom :as d]
-            [helix.hooks :as hooks]
             [promesa.core :as p]
-            [ilta.util :as u]
-            [ilta.storage :as s]))
+            [helix.core :as hx :refer [$]]
+            [ilta.main-view :refer [MainView]]))
 
 
-
-(goog-define DEV false)
-
-
-#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
-(defn stop []
-  (js/console.log "Stopping..."))
-
-
-(defonce root (-> (js/document.getElementById "app")
-                  (createRoot)))
-
-
-(defnc MainView [_]
-  (d/h1 "Hello"))
+(defonce root (createRoot (js/document.getElementById "app")))
 
 
 (defn ^:export start []
-  (js/console.log "Starting in" (if DEV "DEV" "PRODUCTION") "mode...")
-  (.render root ($ MainView)))
+  (js/console.log "start: registering worker...")
+  (-> (js/navigator.serviceWorker.register "worker.js" #js {:scope "./"})
+      (p/then (fn [_] (js/console.log "start: worker registered")))
+      (p/catch (fn [error] (js/console.log "start: worker failed" error))))
+  (js/console.log "start: rendering app")
+  (.render root ($ MainView))
+  (js/console.log "start: ready"))
