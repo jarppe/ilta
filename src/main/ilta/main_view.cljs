@@ -28,6 +28,7 @@
   (let [[entries set-entries] (hooks/use-state nil)]
     (hooks/use-effect
      [selected-date]
+     (js/console.log "use-effect")
      (set-entries nil)
      (-> (s/entries-by-date selected-date)
          (p/then (fn [entries]
@@ -38,7 +39,10 @@
                                          :date    selected-date
                                          :created (+ ts n)})
                                       (range (max 0 (- 3 (count entries)))))))
-                       set-entries))))
+                       (vec)
+                       (set-entries))
+                   (js/console.log "entries set")))
+         (p/catch (fn [error] (js/console.error error))))
      nil)
     (when entries
       (let [[a b c & more] entries]

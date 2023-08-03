@@ -21,61 +21,55 @@
     ex))
 
 
-(defonce db (atom nil))
-
-
 (defn- create-object-store [^js db]
   (let [^js store (.createObjectStore db entry-store entry-spec)]
     (.createIndex store date-index "date" #js {:unique false})
     store))
 
 
-(defn- init! []
-  (-> (p/create (fn [resolve reject]
-                  (let [^js r (js/window.indexedDB.open db-name db-version)]
-                    (set! (.-onupgradeneeded r) (fn [^js e] (create-object-store (-> e .-target .-result))))
-                    (set! (.-onsuccess r) (fn [^js e] (resolve (-> e .-target .-result))))
-                    (set! (.-onerror r) (fn [^js e] (reject (make-error e "can't open")))))))
-      (p/then (fn [opened-db]
-                (reset! db opened-db)
-                true))
-      (p/catch (fn [err]
-                 (js/console.error err)
-                 (throw err)))))
+(defn parse [^js entity]
+  (js->clj entity {:keywordize-keys true}))
+
+
+(defonce db (-> (p/create (fn [resolve reject]
+                            (let [^js r (js/window.indexedDB.open db-name db-version)]
+                              (set! (.-onupgradeneeded r) (fn [^js e] (create-object-store (-> e .-target .-result))))
+                              (set! (.-onsuccess r) (fn [^js e] (resolve (-> e .-target .-result))))
+                              (set! (.-onerror r) (fn [^js e] (reject (make-error e "can't open")))))))
+                (p/catch (fn [err]
+                           (js/console.error err)
+                           (throw err)))))
 
 
 (defn load [entryid]
-  (p/create (fn [resolve reject]
-              (let [req (-> @db
-                            (.transaction entry-store readonly)
-                            (.objectStore entry-store)
-                            (.get entryid))]
-                (set! (.-onsuccess req) (fn [^js e] (resolve (-> e .-target .-result (js->clj {:keywordize-keys true})))))
-                (set! (.-onerror req) (fn [^js e] (reject (make-error e "can't load" entryid))))))))
+  (p/then db (fn [db]
+               (p/create (fn [resolve reject]
+                           (let [req (-> (.transaction db entry-store readonly)
+                                         (.objectStore entry-store)
+                                         (.get entryid))]
+                             (set! (.-onsuccess req) (fn [^js e] (resolve (-> e .-target .-result (parse)))))
+                             (set! (.-onerror req) (fn [^js e] (reject (make-error e "can't load" entryid))))))))))
 
 
 (defn save [entry]
-  (p/create (fn [resolve reject]
-              (let [req (-> (.transaction @db entry-store readwrite)
-                            (.objectStore entry-store)
-                            (.put (clj->js entry)))]
-                (set! (.-onsuccess req) (fn [^js e] (resolve (-> e .-target .-result))))
-                (set! (.-onerror req) (fn [^js e] (reject (make-error e "can't save"))))))))
+  (p/then db (fn [db]
+               (p/create (fn [resolve reject]
+                           (let [req (-> (.transaction db entry-store readwrite)
+                                         (.objectStore entry-store)
+                                         (.put (clj->js entry)))]
+                             (set! (.-onsuccess req) (fn [^js e] (resolve (-> e .-target .-result))))
+                             (set! (.-onerror req) (fn [^js e] (reject (make-error e "can't save"))))))))))
 
 
 (defn entries-by-date [date]
-  (p/create (fn [resolve reject]
-              (let [req (-> (.transaction @db entry-store readonly)
-                            (.objectStore entry-store)
-                            (.index date-index)
-                            (.getAll date))]
-                (set! (.-onsuccess req) (fn [^js e] (resolve (mapv #(js->clj % {:keywordize-keys true})
-                                                                   (-> e .-target .-result)))))
-                (set! (.-onerror req) (fn [^js e] (reject (make-error e "error"))))))))
-
-
-#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
-(defonce __do-init__ (init!))
+  (p/then db (fn [db]
+               (p/create (fn [resolve reject]
+                           (let [req (-> (.transaction db entry-store readonly)
+                                         (.objectStore entry-store)
+                                         (.index date-index)
+                                         (.getAll date))]
+                             (set! (.-onsuccess req) (fn [^js e] (resolve (map parse (-> e .-target .-result)))))
+                             (set! (.-onerror req) (fn [^js e] (reject (make-error e "error"))))))))))
 
 
 (comment
