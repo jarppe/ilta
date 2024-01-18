@@ -29,14 +29,14 @@ jobs:
           cli: "1.11.1.1323"
 
       - name: Cache clj deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: cljdeps-${{ hashFiles('deps.edn', 'shadow-cljs.edn') }}
           restore-keys: cljdeps-
 
       - name: Cache JS deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./node_modules
           key: npmdeps-${{ hashFiles('package.json', 'package-lock.json') }}
